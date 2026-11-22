@@ -4,7 +4,7 @@ A fast, keyboard-friendly notes app with autosave, tags, search and markdown pre
 Notes sync across devices through **Supabase** (Postgres + Auth + Row Level Security),
 or stay in your browser in **Demo mode**. Plain HTML, CSS and vanilla ES modules, with no build step.
 
-**Live demo:** https://m-ahnaff.github.io/notes-app/
+**Live demo:** https://inkwell-m-ahnaff.vercel.app/
 
 > **Screenshot:** _placeholder. Add `docs/screenshot.png` and replace this line with_ `![Inkwell](docs/screenshot.png)`.
 
@@ -75,13 +75,12 @@ Markdown is rendered with marked and sanitized with DOMPurify (no `style`, forms
    Newer projects show a `sb_publishable_…` key. If sign-in requests fail with it, use the legacy **anon** JWT key
    from the *Legacy API keys* tab instead.
 4. **Set the auth URLs:** go to *Authentication → URL Configuration*:
-   - **Site URL:** `https://m-ahnaff.github.io/notes-app/`
-   - **Redirect URLs:** add `https://m-ahnaff.github.io/notes-app/` and `http://localhost:8743/`
-     (you can also add `https://m-ahnaff.github.io/notes-app/**` to allow `index.html`).
+   - **Site URL:** your deployed URL, e.g. `https://inkwell-m-ahnaff.vercel.app/`
+   - **Redirect URLs:** add `https://inkwell-m-ahnaff.vercel.app/**` and `http://localhost:8743/**`
 5. *(Optional)* Under *Authentication → Providers → Email*, decide whether to keep **Confirm email** on (it is on by default
    and the app handles it). Supabase's built-in email sender has strict rate limits. For real use, set up custom SMTP
    under *Authentication → Emails*.
-6. Commit and push. The GitHub Actions workflow deploys the repository root to Pages.
+6. Deploy (see below).
 
 > If your project uses a custom domain instead of `*.supabase.co`, add it to `connect-src` in the CSP `<meta>` in `index.html`.
 
@@ -96,11 +95,16 @@ python3 -m http.server 8743
 
 With `js/config.js` empty, the app starts in Demo mode.
 
-## Deploy (GitHub Pages)
+## Deploy (Vercel)
 
-`.github/workflows/pages.yml` publishes the repository root on every push to `main`.
-In the repo, go to *Settings → Pages → Build and deployment* and set *Source* to **GitHub Actions**.
-`.nojekyll` makes Pages serve the files as they are. All paths are relative, so the site works under `/notes-app/`.
+It's a static site with no build step, hosted on [Vercel](https://vercel.com).
+
+- **From the CLI:** `npx vercel deploy --prod` in the repo root.
+- **From GitHub:** import the repo in Vercel (*Add New → Project*), framework preset **Other**, no build command.
+  Every push to `main` then redeploys.
+
+`.vercelignore` keeps the SQL, docs and repo files out of the deployment.
+All paths are relative, so the app also works from any sub-path or static host.
 
 ## License
 
