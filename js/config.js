@@ -10,5 +10,5 @@
 // user to rows where user_id = auth.uid(). Never put the service_role key here.
 //
 // While both values are empty the app runs in Demo mode (notes stay in this browser).
-export const SUPABASE_URL = '';
-export const SUPABASE_ANON_KEY = '';
+export const SUPABASE_URL = 'https://rdtdiqbfjzddwmzgmcnq.supabase.co';
+export const SUPABASE_ANON_KEY = 'sb_publishable_Bp2bJtkZ8WH15VRsbMKG6g_lolosxd-';
