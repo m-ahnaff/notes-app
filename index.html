@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Inkwell — Markdown notes with cloud sync</title>
+  <meta name="description" content="A fast, keyboard-friendly markdown notes app with autosave, tags, search and Supabase cloud sync.">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#f6f2ea" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#151412" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,650&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="css/styles.css">
+  <script type="module" src="js/app.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#note-list">Skip to notes</a>
+
+  <!-- Boot / loading -->
+  <div id="boot" class="boot" role="status" aria-live="polite">
+    <div class="boot__mark" aria-hidden="true"></div>
+    <p class="boot__text">Opening your notebook…</p>
+    <noscript><p>Inkwell needs JavaScript enabled.</p></noscript>
+  </div>
+
+  <!-- Auth -->
+  <section id="auth-view" class="auth" hidden aria-labelledby="auth-title">
+    <div class="auth__card">
+      <div class="brand brand--lg">
+        <span class="brand__mark" aria-hidden="true"></span>
+        <span class="brand__name">Inkwell</span>
+      </div>
+      <h1 id="auth-title" class="auth__title">Your notes, everywhere.</h1>
+      <p class="auth__lede">Markdown notes that autosave and sync across your devices.</p>
+
+      <div id="auth-forms">
+        <div class="segmented" role="tablist" aria-label="Account">
+          <button type="button" role="tab" id="tab-signin" aria-controls="form-signin" aria-selected="true" class="segmented__btn">Sign in</button>
+          <button type="button" role="tab" id="tab-signup" aria-controls="form-signup" aria-selected="false" class="segmented__btn" tabindex="-1">Create account</button>
+        </div>
+
+        <form id="form-signin" class="form" role="tabpanel" aria-labelledby="tab-signin" novalidate>
+          <div class="field">
+            <label for="signin-email">Email</label>
+            <input id="signin-email" name="email" type="email" autocomplete="email" required inputmode="email" spellcheck="false">
+          </div>
+          <div class="field">
+            <div class="field__row">
+              <label for="signin-password">Password</label>
+              <button type="button" class="link-btn" id="forgot-btn">Forgot password?</button>
+            </div>
+            <input id="signin-password" name="password" type="password" autocomplete="current-password" required minlength="6">
+          </div>
+          <button type="submit" class="btn btn--primary btn--block">Sign in</button>
+          <div class="divider"><span>or</span></div>
+          <button type="button" class="btn btn--block" id="magic-btn">Email me a magic link</button>
+        </form>
+
+        <form id="form-signup" class="form" role="tabpanel" aria-labelledby="tab-signup" hidden novalidate>
+          <div class="field">
+            <label for="signup-email">Email</label>
+            <input id="signup-email" name="email" type="email" autocomplete="email" required inputmode="email" spellcheck="false">
+          </div>
+          <div class="field">
+            <label for="signup-password">Password</label>
+            <input id="signup-password" name="password" type="password" autocomplete="new-password" required minlength="6" aria-describedby="signup-password-hint">
+            <p class="field__hint" id="signup-password-hint">At least 6 characters.</p>
+          </div>
+          <button type="submit" class="btn btn--primary btn--block">Create account</button>
+        </form>
+      </div>
+
+      <div id="auth-check" class="auth__check" hidden tabindex="-1">
+        <div class="auth__check-icon" aria-hidden="true">✉</div>
+        <h2 class="auth__check-title">Check your email</h2>
+        <p id="auth-check-text">We sent you a link.</p>
+        <div class="auth__check-actions">
+          <button type="button" class="btn" id="auth-resend">Resend email</button>
+          <button type="button" class="btn btn--ghost" id="auth-back">Back</button>
+        </div>
+      </div>
+
+      <p id="auth-msg" class="auth__msg" role="status" aria-live="polite"></p>
+
+      <div class="auth__demo">
+        <button type="button" class="btn btn--ghost btn--block" id="demo-btn">Try without an account</button>
+        <p class="field__hint">Demo notes are stored only in this browser.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- App -->
+  <div id="app-view" class="app" hidden data-pane="list">
+    <aside class="sidebar" aria-label="Notes">
+      <header class="sidebar__head">
+        <div class="brand">
+          <span class="brand__mark" aria-hidden="true"></span>
+          <span class="brand__name">Inkwell</span>
+        </div>
+        <div class="menu" id="account-menu">
+          <button type="button" class="icon-btn" id="menu-btn" aria-expanded="false" aria-controls="menu-panel" aria-label="Menu">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+          </button>
+          <div class="menu__panel" id="menu-panel" hidden>
+            <p class="menu__who" id="menu-who"></p>
+            <button type="button" class="menu__item" data-action="export-json">Export all as JSON</button>
+            <button type="button" class="menu__item" data-action="export-md">Export all as Markdown</button>
+            <button type="button" class="menu__item" data-action="import-json">Import JSON…</button>
+            <hr>
+            <button type="button" class="menu__item" data-action="theme">Theme: <span id="theme-label">System</span></button>
+            <button type="button" class="menu__item" data-action="shortcuts">Keyboard shortcuts <kbd>?</kbd></button>
+            <hr>
+            <button type="button" class="menu__item" data-action="copy-demo" id="menu-copy-demo" hidden>Copy demo notes to account</button>
+            <button type="button" class="menu__item" data-action="change-pw" id="menu-change-pw" hidden>Change password</button>
+            <button type="button" class="menu__item" data-action="to-auth" id="menu-to-auth" hidden>Sign in to sync</button>
+            <button type="button" class="menu__item menu__item--danger" data-action="sign-out" id="menu-sign-out" hidden>Sign out</button>
+          </div>
+        </div>
+      </header>
+
+      <div id="mode-badge" class="mode-badge" hidden>
+        <span class="mode-badge__dot" aria-hidden="true"></span>
+        <span id="mode-badge-text">Demo mode — notes stay in this browser</span>
+      </div>
+
+      <div class="sidebar__tools">
+        <div class="search">
+          <label for="search" class="sr-only">Search notes</label>
+          <svg class="search__icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>
+          <input id="search" type="search" placeholder="Search notes" autocomplete="off" spellcheck="false" aria-describedby="search-kbd">
+          <kbd class="search__kbd" id="search-kbd" aria-label="Shortcut: Control K">Ctrl K</kbd>
+        </div>
+        <button type="button" class="btn btn--primary btn--new" id="new-btn" aria-keyshortcuts="Alt+N">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+          <span>New</span>
+        </button>
+      </div>
+
+      <nav class="tags-nav" aria-label="Filter by tag">
+        <ul id="tag-filter" class="tag-filter"></ul>
+      </nav>
+
+      <div class="list-head">
+        <h2 class="list-head__title" id="list-title">All notes</h2>
+        <label for="sort" class="sr-only">Sort notes</label>
+        <select id="sort" class="select">
+          <option value="updated">Last edited</option>
+          <option value="created">Date created</option>
+          <option value="title">Title A–Z</option>
+        </select>
+      </div>
+
+      <div class="list-wrap">
+        <ul id="note-list" class="note-list" aria-labelledby="list-title" aria-busy="true" tabindex="-1"></ul>
+        <div id="list-empty" class="empty" hidden></div>
+      </div>
+      <p class="sidebar__count" id="list-count" aria-live="polite"></p>
+    </aside>
+
+    <main class="editor-pane" id="editor-pane">
+      <div id="editor-empty" class="empty empty--editor">
+        <div class="empty__art" aria-hidden="true"></div>
+        <h2 class="empty__title">Nothing open</h2>
+        <p class="empty__text">Pick a note from the list, or start a fresh page.</p>
+        <button type="button" class="btn btn--primary" id="empty-new-btn">New note</button>
+      </div>
+
+      <article id="editor" class="editor" hidden aria-label="Note editor">
+        <div class="editor__bar">
+          <button type="button" class="icon-btn editor__back" id="back-btn" aria-label="Back to notes">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+          </button>
+          <p class="save-status" id="save-status" data-state="saved">
+            <span class="save-status__dot" aria-hidden="true"></span>
+            <span id="save-status-text">Saved</span>
+          </p>
+          <div class="editor__actions">
+            <div class="segmented segmented--sm" role="group" aria-label="View">
+              <button type="button" class="segmented__btn" id="mode-edit" aria-pressed="true">Edit</button>
+              <button type="button" class="segmented__btn" id="mode-preview" aria-pressed="false">Preview</button>
+            </div>
+            <button type="button" class="icon-btn" id="pin-btn" aria-pressed="false" aria-label="Pin note">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4h6l-1 5 3 3v2H7v-2l3-3-1-5zM12 14v6"/></svg>
+            </button>
+            <button type="button" class="icon-btn icon-btn--danger" id="delete-btn" aria-label="Delete note">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="editor__scroll">
+          <label for="note-title" class="sr-only">Title</label>
+          <input id="note-title" class="editor__title" type="text" placeholder="Untitled" maxlength="500" autocomplete="off">
+
+          <div class="tags" id="tags-row">
+            <ul class="tags__list" id="tags-list" aria-label="Tags"></ul>
+            <label for="tag-input" class="sr-only">Add tag</label>
+            <input id="tag-input" class="tags__input" type="text" placeholder="+ tag" maxlength="32" autocomplete="off" spellcheck="false" aria-describedby="tag-hint">
+            <span id="tag-hint" class="sr-only">Press Enter or comma to add a tag. Backspace in an empty field removes the last tag.</span>
+          </div>
+
+          <label for="note-body" class="sr-only">Note content (Markdown)</label>
+          <textarea id="note-body" class="editor__body" placeholder="Start writing… Markdown is supported." spellcheck="true"></textarea>
+          <div id="note-preview" class="editor__preview prose" hidden tabindex="0" role="region" aria-label="Rendered preview"></div>
+        </div>
+
+        <footer class="editor__foot">
+          <span id="word-count">0 words</span>
+          <span aria-hidden="true" class="foot-sep">·</span>
+          <span id="read-time">0 min read</span>
+          <span class="editor__foot-spacer"></span>
+          <span id="edited-at"></span>
+        </footer>
+      </article>
+    </main>
+  </div>
+
+  <p id="live-status" class="sr-only" role="status" aria-live="polite"></p>
+  <div class="toast-stack">
+    <div id="toasts-alert" class="toasts" role="alert"></div>
+    <div id="toasts" class="toasts" aria-live="polite" aria-relevant="additions"></div>
+  </div>
+
+  <input type="file" id="import-file" accept="application/json,.json" hidden>
+
+  <dialog id="shortcuts-dialog" class="dialog" aria-labelledby="shortcuts-title">
+    <form method="dialog">
+      <h2 id="shortcuts-title" class="dialog__title">Keyboard shortcuts</h2>
+      <dl class="shortcuts">
+        <dt><kbd data-mod>Ctrl</kbd> <kbd>K</kbd></dt><dd>Search notes</dd>
+        <dt><kbd data-mod>Ctrl</kbd> <kbd>N</kbd> or <kbd>Alt</kbd> <kbd>N</kbd></dt><dd>New note</dd>
+        <dt><kbd data-mod>Ctrl</kbd> <kbd>E</kbd></dt><dd>Toggle edit / preview</dd>
+        <dt><kbd data-mod>Ctrl</kbd> <kbd>S</kbd></dt><dd>Save now</dd>
+        <dt><kbd>↑</kbd> <kbd>↓</kbd></dt><dd>Move through the note list</dd>
+        <dt><kbd>Esc</kbd></dt><dd>Clear search / close / back to list</dd>
+        <dt><kbd>?</kbd></dt><dd>Show this help</dd>
+      </dl>
+      <p class="field__hint">Some browsers reserve <kbd>Ctrl</kbd> <kbd>N</kbd> for a new window — use <kbd>Alt</kbd> <kbd>N</kbd> there.</p>
+      <div class="dialog__actions"><button class="btn btn--primary" value="close">Done</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="password-dialog" class="dialog" aria-labelledby="password-title">
+    <form id="password-form" novalidate>
+      <h2 id="password-title" class="dialog__title">Choose a new password</h2>
+      <div class="field">
+        <label for="new-password">New password</label>
+        <input id="new-password" type="password" autocomplete="new-password" minlength="6" required>
+      </div>
+      <p id="password-msg" class="auth__msg" role="status" aria-live="polite"></p>
+      <div class="dialog__actions">
+        <button type="button" class="btn btn--ghost" id="password-cancel">Later</button>
+        <button type="submit" class="btn btn--primary">Update password</button>
+      </div>
+    </form>
+  </dialog>
+</body>
+</html>
