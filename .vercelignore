@@ -1,5 +1,7 @@
 README.md
 LICENSE
+SECURITY.md
+docs/
 supabase/
 .github/
 .gitignore
